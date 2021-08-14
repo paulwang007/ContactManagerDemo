@@ -2,6 +2,7 @@ package com.anushka.androidtutz.contactmanager.db.entity;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "contacts")
@@ -16,6 +17,7 @@ public class Contact {
     private long id;
 
 
+    @Ignore
     public Contact() {
     }
 
