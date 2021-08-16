@@ -19,8 +19,8 @@ interface ContactDAO {
     fun deleteContact(contact: Contact)
 
     @Query("SELECT * FROM contacts")
-    fun getContacts() : List<Contact>
+    fun getContacts() : List<Contact?>
 
     @Query("SELECT * FROM CONTACTS WHERE contact_id == :id")
-    fun getContact(id : Long)
+    fun getContact(id : Long): Contact?
 }
