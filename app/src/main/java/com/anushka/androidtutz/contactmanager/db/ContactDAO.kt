@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.anushka.androidtutz.contactmanager.db.entity.Contact
+import io.reactivex.rxjava3.core.Flowable
 
 @Dao
 interface ContactDAO {
@@ -19,7 +20,7 @@ interface ContactDAO {
     fun deleteContact(contact: Contact)
 
     @Query("SELECT * FROM contacts")
-    fun getContacts() : List<Contact?>
+    fun getContacts() : Flowable<List<Contact?>>
 
     @Query("SELECT * FROM CONTACTS WHERE contact_id == :id")
     fun getContact(id : Long): Contact?
