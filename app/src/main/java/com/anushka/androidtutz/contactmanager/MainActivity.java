@@ -2,52 +2,61 @@ package com.anushka.androidtutz.contactmanager;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-
-import com.anushka.androidtutz.contactmanager.db.ContactsAppDatabase;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.room.Room;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.anushka.androidtutz.contactmanager.adapter.ContactsAdapter;
+import com.anushka.androidtutz.contactmanager.db.ContactsAppDatabase;
 import com.anushka.androidtutz.contactmanager.db.entity.Contact;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 public class MainActivity extends AppCompatActivity {
 
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private ContactsAdapter contactsAdapter;
-    private ArrayList<Contact> contactArrayList = new ArrayList<>();
+    private final ArrayList<Contact> contactArrayList = new ArrayList<>();
     private RecyclerView recyclerView;
     private ContactsAppDatabase contactsAppDatabase;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(" Contacts Manager");
 
         recyclerView = findViewById(R.id.recycler_view_contacts);
 
         contactsAppDatabase = Room.databaseBuilder(this, ContactsAppDatabase.class, "ContactDB").allowMainThreadQueries().build();
-        contactArrayList.addAll(contactsAppDatabase.getContactDAO().getContacts());
+        compositeDisposable.add(
+                contactsAppDatabase.getContactDAO().getContacts()
+                        .subscribeOn(Schedulers.computation())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(contacts -> {
+                            contactArrayList.clear();
+                            contactArrayList.addAll(contacts);
+                        })
+        );
 
         contactsAdapter = new ContactsAdapter(this, contactArrayList, MainActivity.this);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -55,38 +64,15 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(contactsAdapter);
 
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 addAndEditContacts(false, null, -1);
             }
 
-
         });
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-
-
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
 
     public void addAndEditContacts(final boolean isUpdate, final Contact contact, final int position) {
         LayoutInflater layoutInflaterAndroid = LayoutInflater.from(getApplicationContext());
@@ -129,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
 
-
         final AlertDialog alertDialog = alertDialogBuilderUserInput.create();
         alertDialog.show();
 
@@ -143,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     alertDialog.dismiss();
                 }
-
 
                 if (isUpdate && contact != null) {
 
@@ -176,13 +160,11 @@ public class MainActivity extends AppCompatActivity {
 
         contactsAdapter.notifyDataSetChanged();
 
-
     }
 
     private void createContact(String name, String email) {
         long temp_id = 0;
         contactsAppDatabase.getContactDAO().addContact(new Contact(temp_id, name, email));
-
 
         Contact contact = contactsAppDatabase.getContactDAO().getContact(temp_id);
 
@@ -193,5 +175,31 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        compositeDisposable.dispose();
     }
 }
