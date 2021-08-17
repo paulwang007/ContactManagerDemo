@@ -32,8 +32,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity {
 
     private final CompositeDisposable compositeDisposable = new CompositeDisposable();
-    private ContactsAdapter contactsAdapter;
     private final ArrayList<Contact> contactArrayList = new ArrayList<>();
+    private ContactsAdapter contactsAdapter;
     private RecyclerView recyclerView;
     private ContactsAppDatabase contactsAppDatabase;
 
@@ -53,9 +53,13 @@ public class MainActivity extends AppCompatActivity {
                         .subscribeOn(Schedulers.computation())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(contacts -> {
-                            contactArrayList.clear();
-                            contactArrayList.addAll(contacts);
-                        })
+                                    contactArrayList.clear();
+                                    contactArrayList.addAll(contacts);
+                                },
+                                onError -> {
+                                    // Error handling
+                                }
+                        )
         );
 
         contactsAdapter = new ContactsAdapter(this, contactArrayList, MainActivity.this);
